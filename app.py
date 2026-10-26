@@ -378,8 +378,11 @@ class App(tk.Tk):
                 self.last_mp4_path = out_mp4
                 self.last_gif_path = out_gif
 
-                self.log(f"[*] Encoding MP4 video ({len(scenes)} scenes, 30 FPS, 5000k bitrate)...")
-                preview_engine.build_video(scene_images, out_mp4, fps=30)
+                default_audio = current_dir / "assets" / "ambient_tech.mp3"
+                audio_to_use = default_audio if default_audio.is_file() else None
+
+                self.log(f"[*] Encoding MP4 video ({len(scenes)} scenes, 30 FPS, Audio: {'Enabled' if audio_to_use else 'Muted'})...")
+                preview_engine.build_video(scene_images, out_mp4, fps=30, audio_path=audio_to_use)
                 self.log(f"[✓] MP4 Completed: previews/{safe_folder_name}/{out_mp4.name} ({out_mp4.stat().st_size / (1024*1024):.1f} MB)")
 
                 self.log("[*] Compiling high-definition GIF (960px, 256 colors)...")

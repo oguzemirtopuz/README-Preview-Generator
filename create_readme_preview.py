@@ -447,7 +447,7 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
     return project_title or "Cognitive AI Architecture", features[:target_limit]
 
 
-def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int) -> None:
+def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, audio_path: Path | None = None) -> None:
     clips = []
     step = SCENE_SECONDS - TRANSITION_SECONDS
     for index, image in enumerate(scene_images):
@@ -466,13 +466,38 @@ def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int) -> 
     duration = SCENE_SECONDS + max(0, len(clips) - 1) * step
     composite = CompositeVideoClip(clips, size=(WIDTH, HEIGHT), bg_color=(9, 13, 22))
     composite = composite.with_duration(duration) if hasattr(composite, "with_duration") else composite.set_duration(duration)
+
+    audio_clip = None
+    if audio_path and Path(audio_path).is_file():
+        try:
+            try:
+                from moviepy import AudioFileClip, afx
+            except ImportError:
+                from moviepy.editor import AudioFileClip
+                from moviepy.audio import fx as afx
+            audio_clip = AudioFileClip(str(audio_path))
+            audio_clip = audio_clip.subclipped(0, duration) if hasattr(audio_clip, "subclipped") else audio_clip.subclip(0, duration)
+            try:
+                audio_clip = audio_clip.with_effects([afx.AudioFadeOut(1.5)])
+            except Exception:
+                if hasattr(audio_clip, "audio_fadeout"):
+                    audio_clip = audio_clip.audio_fadeout(1.5)
+            composite = composite.with_audio(audio_clip) if hasattr(composite, "with_audio") else composite.set_audio(audio_clip)
+        except Exception as e:
+            print(f"[!] Warning: Audio could not be loaded: {e}", file=sys.stderr)
+
     try:
         composite.write_videofile(
-            str(output_mp4), fps=fps, codec="libx264", audio=False,
+            str(output_mp4), fps=fps, codec="libx264", audio=bool(audio_clip), audio_codec="aac",
             preset="medium", bitrate="5000k", threads=4, logger=None,
         )
     finally:
         composite.close()
+        if audio_clip:
+            try:
+                audio_clip.close()
+            except Exception:
+                pass
         for clip in clips:
             try:
                 clip.close()
@@ -567,8 +592,11 @@ def main() -> int:
     out_mp4 = output_dir / "preview_1080p.mp4"
     out_gif = output_dir / "preview_1080p.gif"
 
-    print(f"\n[*] Rendering 1080p Full HD video ({len(scene_images)} scenes, 30 FPS, 5000k Bitrate)...")
-    build_video(scene_images, out_mp4, fps=args.fps)
+    default_audio = Path(__file__).parent / "assets" / "ambient_tech.mp3"
+    audio_to_use = default_audio if default_audio.is_file() else None
+
+    print(f"\n[*] Rendering 1080p Full HD video ({len(scene_images)} scenes, 30 FPS, 5000k Bitrate, Audio: {'Enabled' if audio_to_use else 'Muted'})...")
+    build_video(scene_images, out_mp4, fps=args.fps, audio_path=audio_to_use)
     print(f"[✓] MP4 Ready: {out_mp4.resolve()} ({out_mp4.stat().st_size / (1024*1024):.1f} MB)")
 
     print(f"[*] Rendering optimized GIF (960px, 256 colors)...")
