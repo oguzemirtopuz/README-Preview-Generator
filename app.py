@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Modern Dark-Themed GUI for GitHub README Preview Generator (1080p).
-Fully in English with Smart Adaptive Scene Count selection and Organized Output Folders.
+Fully in English with Smart Adaptive Scene Count selection, Repository Showcase & Portfolio Modes.
 """
 import os
 import sys
@@ -18,7 +18,6 @@ sys.path.insert(0, str(current_dir))
 
 import create_readme_preview as preview_engine
 
-# Dark Theme Palette
 COLOR_BG = "#0b0f19"
 COLOR_CARD = "#111827"
 COLOR_INPUT = "#1e293b"
@@ -29,6 +28,7 @@ COLOR_BLUE = "#38bdf8"
 COLOR_BLUE_HOVER = "#0284c7"
 COLOR_GREEN = "#10b981"
 COLOR_GREEN_HOVER = "#059669"
+COLOR_PURPLE = "#a855f7"
 COLOR_CONSOLE_BG = "#030712"
 
 
@@ -36,7 +36,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("README Preview Generator (1080p Full HD)")
-        self.geometry("740x760")
+        self.geometry("740x780")
         self.minsize(700, 720)
         self.configure(bg=COLOR_BG)
 
@@ -66,7 +66,7 @@ class App(tk.Tk):
         ).pack(anchor="w")
 
         tk.Label(
-            header_frame, text="Generate organized 1080p Full HD showcase videos and GIFs categorized by repository",
+            header_frame, text="Generate organized 1080p Full HD showcase videos for Repositories & Developer Portfolios",
             font=("Segoe UI", 11), fg=COLOR_MUTED, bg=COLOR_BG
         ).pack(anchor="w", pady=(2, 0))
 
@@ -83,15 +83,21 @@ class App(tk.Tk):
         mode_frame.pack(fill="x", pady=(0, 10))
 
         tk.Radiobutton(
-            mode_frame, text="🌐 Fetch from GitHub Profile", variable=self.source_mode, value="github",
+            mode_frame, text="🌐 GitHub Profile / Repos", variable=self.source_mode, value="github",
             font=("Segoe UI", 11, "bold"), fg=COLOR_BLUE, bg=COLOR_CARD, selectcolor=COLOR_INPUT,
             activebackground=COLOR_CARD, activeforeground=COLOR_BLUE, command=self.toggle_mode
-        ).pack(side="left", padx=(0, 25))
+        ).pack(side="left", padx=(0, 20))
 
         tk.Radiobutton(
-            mode_frame, text="📁 Choose Local README.md", variable=self.source_mode, value="local",
+            mode_frame, text="📁 Local README.md", variable=self.source_mode, value="local",
             font=("Segoe UI", 11, "bold"), fg=COLOR_MUTED, bg=COLOR_CARD, selectcolor=COLOR_INPUT,
             activebackground=COLOR_CARD, activeforeground=COLOR_MUTED, command=self.toggle_mode
+        ).pack(side="left", padx=(0, 20))
+
+        tk.Radiobutton(
+            mode_frame, text="★ Developer Portfolio Mode", variable=self.source_mode, value="portfolio",
+            font=("Segoe UI", 11, "bold"), fg=COLOR_PURPLE, bg=COLOR_CARD, selectcolor=COLOR_INPUT,
+            activebackground=COLOR_CARD, activeforeground=COLOR_PURPLE, command=self.toggle_mode
         ).pack(side="left")
 
         # GitHub Section
@@ -137,6 +143,14 @@ class App(tk.Tk):
             bg=COLOR_INPUT, fg=COLOR_TEXT, relief="flat", cursor="hand2", command=self.browse_file
         )
         self.browse_btn.pack(side="right", ipady=2, ipadx=10)
+
+        # Portfolio Banner Frame
+        self.portfolio_frame = tk.Frame(card_inner, bg="#162032", highlightbackground=COLOR_PURPLE, highlightthickness=1)
+        tk.Label(
+            self.portfolio_frame,
+            text="★ Developer Portfolio Mode: Highlights your Steam game, JARVIS OS, live SaaS products & engineering motto.",
+            font=("Segoe UI", 10, "bold"), fg=COLOR_TEXT, bg="#162032", wraplength=620, justify="left"
+        ).pack(padx=15, pady=10)
 
         # 3. Settings Card
         settings_card = tk.Frame(self, bg=COLOR_CARD, highlightbackground=COLOR_BORDER, highlightthickness=1)
@@ -185,7 +199,7 @@ class App(tk.Tk):
             insertbackground="#ffffff", relief="flat", wrap="word", height=7
         )
         self.console.pack(fill="both", expand=True, padx=15, pady=(0, 10))
-        self.log("Ready. Previews will be categorized under 'previews/<repo_name>/' automatically.")
+        self.log("Ready. Select repository or Portfolio mode, then click Generate.")
 
         # 6. Result Open Buttons
         self.result_frame = tk.Frame(self, bg=COLOR_BG)
@@ -206,7 +220,7 @@ class App(tk.Tk):
         self.open_gif_btn.pack(side="left", fill="x", expand=True, padx=4, ipady=6)
 
         self.open_dir_btn = tk.Button(
-            self.result_frame, text="📁 Open Repo Folder", font=("Segoe UI", 11, "bold"),
+            self.result_frame, text="📁 Open Output Folder", font=("Segoe UI", 11, "bold"),
             bg=COLOR_INPUT, fg=COLOR_TEXT, activebackground=COLOR_BORDER, relief="flat",
             state="disabled", cursor="hand2", command=self.open_folder
         )
@@ -217,12 +231,17 @@ class App(tk.Tk):
         self.console.see("end")
 
     def toggle_mode(self):
-        if self.source_mode.get() == "github":
-            self.local_frame.pack_forget()
+        mode = self.source_mode.get()
+        self.github_frame.pack_forget()
+        self.local_frame.pack_forget()
+        self.portfolio_frame.pack_forget()
+
+        if mode == "github":
             self.github_frame.pack(fill="x", pady=5)
-        else:
-            self.github_frame.pack_forget()
+        elif mode == "local":
             self.local_frame.pack(fill="x", pady=5)
+        elif mode == "portfolio":
+            self.portfolio_frame.pack(fill="x", pady=5)
 
     def browse_file(self):
         filename = filedialog.askopenfilename(
@@ -264,36 +283,34 @@ class App(tk.Tk):
         github_user = None
         repo_name = None
         local_readme = None
+        is_portfolio = False
 
-        if mode == "github":
+        if mode == "portfolio":
+            is_portfolio = True
+            category_name = "Oğuz_Emir_Topuz_Portfolio"
+        elif mode == "github":
             github_user = self.user_entry.get().strip()
             repo_name = self.repo_combo.get().strip()
             if not github_user or not repo_name:
                 messagebox.showwarning("Missing Info", "Please fetch and select a repository first.")
                 return
-            category_name = repo_name
+            if repo_name.lower() in ["oguzemirtopuz", "portfolio"]:
+                is_portfolio = True
+                category_name = "Oğuz_Emir_Topuz_Portfolio"
+            else:
+                category_name = repo_name
         else:
             local_readme = self.local_entry.get().strip()
             if not local_readme or not os.path.exists(local_readme):
                 messagebox.showwarning("Missing Info", "Please select a valid README.md file.")
                 return
             parent_dir = Path(local_readme).parent.name
-            category_name = parent_dir if parent_dir and parent_dir != "." else "Local_Project"
+            if "oguzemirtopuz" in parent_dir.lower():
+                is_portfolio = True
+                category_name = "Oğuz_Emir_Topuz_Portfolio"
+            else:
+                category_name = parent_dir if parent_dir and parent_dir != "." else "Local_Project"
 
-        choice = self.scenes_combo.get()
-        max_scenes = 0
-        if "4 Scenes" in choice:
-            max_scenes = 4
-        elif "6 Scenes" in choice:
-            max_scenes = 6
-        elif "8 Scenes" in choice:
-            max_scenes = 8
-        elif "10 Scenes" in choice:
-            max_scenes = 10
-        elif "Max Possible" in choice:
-            max_scenes = 20
-
-        # Dedicated categorized folder under previews/<category_name>
         safe_folder_name = re.sub(r"[^\w\-.]", "_", category_name)
         target_dir = current_dir / "previews" / safe_folder_name
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -306,44 +323,62 @@ class App(tk.Tk):
 
         def _worker():
             try:
-                readme_text = ""
-                title = ""
-
-                if mode == "github":
-                    self.log(f"[*] Downloading README.md for '{repo_name}'...")
-                    readme_text = preview_engine.fetch_github_readme(github_user, repo_name)
-                    title = repo_name
+                if is_portfolio:
+                    project_title = "Oğuz Emir Topuz"
+                    header_label = "DEVELOPER PORTFOLIO"
+                    footer_text = "OĞUZ EMİR TOPUZ  •  AUTONOMOUS AI & SAAS ARCHITECT  •  PRODUCTION SYSTEMS"
+                    scenes = preview_engine.get_portfolio_scenes()
+                    self.log("[★] Developer Portfolio Mode Active: Oğuz Emir Topuz")
+                    self.log(f"[✓] Compiling {len(scenes)} curated portfolio showcase scenes...")
                 else:
-                    self.log(f"[*] Reading local README: {local_readme}")
-                    readme_text = Path(local_readme).read_text(encoding="utf-8", errors="replace")
+                    header_label = "FEATURE SHOWCASE"
+                    footer_text = "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE"
+                    readme_text = ""
+                    title = ""
 
-                parsed_title, features = preview_engine.parse_readme_content(readme_text, max_features=max_scenes)
-                title = title or parsed_title
+                    if mode == "github":
+                        self.log(f"[*] Downloading README.md for '{repo_name}'...")
+                        readme_text = preview_engine.fetch_github_readme(github_user, repo_name)
+                        title = repo_name
+                    else:
+                        self.log(f"[*] Reading local README: {local_readme}")
+                        readme_text = Path(local_readme).read_text(encoding="utf-8", errors="replace")
 
-                self.log(f"[✓] Target Project: {title}")
-                self.log(f"[✓] Output Folder: previews/{safe_folder_name}/")
-                self.log(f"[✓] Extracted {len(features)} core showcase features.")
-                for t, b in features:
-                    self.log(f"    • {t}: {b[:55]}...")
+                    choice = self.scenes_combo.get()
+                    max_scenes = 0
+                    if "4 Scenes" in choice:
+                        max_scenes = 4
+                    elif "6 Scenes" in choice:
+                        max_scenes = 6
+                    elif "8 Scenes" in choice:
+                        max_scenes = 8
+                    elif "10 Scenes" in choice:
+                        max_scenes = 10
+                    elif "Max Possible" in choice:
+                        max_scenes = 20
 
-                scene_specs = [
-                    ("Autonomous Architecture", "A self-directing cognitive OS that plans, executes, and heals itself.", None)
-                ]
-                for t, b in features:
-                    scene_specs.append((t, b, None))
+                    parsed_title, features = preview_engine.parse_readme_content(readme_text, max_features=max_scenes)
+                    project_title = title or parsed_title
+                    self.log(f"[✓] Target Project: {project_title}")
+                    self.log(f"[✓] Extracted {len(features)} core showcase features.")
+                    scenes = [("Autonomous Architecture", "A self-directing cognitive OS that plans, executes, and heals itself.")] + features
 
-                self.log(f"[*] Generating {len(scene_specs)} dynamic 1080p scenes with contextual logs & badges...")
+                self.log(f"[*] Output Folder: previews/{safe_folder_name}/")
+                self.log(f"[*] Generating {len(scenes)} dynamic 1080p scenes with contextual logs & badges...")
                 scene_images = []
-                total = len(scene_specs)
-                for idx, (t, b, img) in enumerate(scene_specs, 1):
-                    scene_images.append(preview_engine.make_text_scene(t, b, title, idx, total))
+                total = len(scenes)
+                for idx, (t, b) in enumerate(scenes, start=1):
+                    scene_images.append(preview_engine.make_text_scene(
+                        t, b, project_title, idx, total,
+                        header_label=header_label, footer_text=footer_text
+                    ))
 
                 out_mp4 = target_dir / "preview_1080p.mp4"
                 out_gif = target_dir / "preview_1080p.gif"
                 self.last_mp4_path = out_mp4
                 self.last_gif_path = out_gif
 
-                self.log(f"[*] Encoding MP4 video ({len(scene_specs)} scenes, 30 FPS, 5000k bitrate)...")
+                self.log(f"[*] Encoding MP4 video ({len(scenes)} scenes, 30 FPS, 5000k bitrate)...")
                 preview_engine.build_video(scene_images, out_mp4, fps=30)
                 self.log(f"[✓] MP4 Completed: previews/{safe_folder_name}/{out_mp4.name} ({out_mp4.stat().st_size / (1024*1024):.1f} MB)")
 
@@ -363,7 +398,7 @@ class App(tk.Tk):
         self.open_gif_btn.config(state="normal")
         self.open_dir_btn.config(state="normal")
         self.log(f"\n🎉 Success! Files saved in: previews/{self.last_output_dir.name}/")
-        messagebox.showinfo("Success", f"Previews created and organized successfully in:\npreviews/{self.last_output_dir.name}/")
+        messagebox.showinfo("Success", f"Showcase created successfully in:\npreviews/{self.last_output_dir.name}/")
 
     def _on_error(self, err_msg):
         self.generate_btn.config(state="normal", text="🚀 Generate 1080p Full HD Preview")

@@ -4,7 +4,8 @@ Create a polished GitHub README preview as preview_1080p.mp4 and preview_1080p.g
 Features:
 - 1080p Full HD (1920x1080) crystal-clear output
 - Fully in English (Global GitHub standard)
-- Smart Adaptive Scene Count: Automatically adapts to project complexity (4 to 12 scenes)
+- Dual Mode: Repository Showcase Mode + Personal Developer Portfolio Mode
+- Smart Adaptive Scene Count (4 to 12 scenes)
 - Fully dynamic scenes: Terminal logs & Badges change per scene based on topic!
 - Modern macOS window styling, dot-grid high-tech background
 - GitHub Integration: Fetch public repos & READMEs directly via GitHub API
@@ -156,8 +157,9 @@ def _header(draw: ImageDraw.ImageDraw, title: str, label: str = "FEATURE SHOWCAS
         draw.text((105, title_y), line, font=title_font, fill=WHITE)
 
 
-def _footer(draw: ImageDraw.ImageDraw, index: int, total: int) -> None:
-    draw.text((105, HEIGHT - 68), "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE", font=_font(18, True), fill=MUTED)
+def _footer(draw: ImageDraw.ImageDraw, index: int, total: int, footer_text: str = "") -> None:
+    text = footer_text or "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE"
+    draw.text((105, HEIGHT - 68), text, font=_font(18, True), fill=MUTED)
 
     bar_x, bar_y, bar_w = WIDTH - 280, HEIGHT - 60, 150
     draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 10), radius=5, fill="#1e293b")
@@ -193,7 +195,73 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
     clean_proj = re.sub(r"[^a-zA-Z0-9_\-]", "", project_title.split()[0]).lower() or "app"
     clean_slug = re.sub(r"[^a-zA-Z0-9_\-]", "", title.lower().replace(" ", "_"))[:18] or "core"
 
-    if any(k in text_content for k in ["memory", "vector", "recall", "chroma", "store", "database"]):
+    # Ultra-simple, human-first portfolio lines (zero developer jargon, crystal clear for anyone)
+    if any(k in text_content for k in ["shipped, not", "oguzemirtopuz", "portfolio", "builder"]):
+        terminal_lines = [
+            "Builder: 15-year-old software creator & AI architect",
+            "Focus: Building real-world AI apps and games from scratch",
+            "Proof: 16+ production systems live on the web today"
+        ]
+        badges = [("Autonomous AI", BLUE), ("Live Products", ACCENT_GREEN), ("Young Builder", ACCENT_PURPLE)]
+    elif any(k in text_content for k in ["jarvis", "cognitive"]):
+        terminal_lines = [
+            "Problem: Chatbots break down and ask you for help when errors happen",
+            "What JARVIS Does: Detects failures and fixes its own mistakes automatically",
+            "Result: 100% autonomous — finishes the entire job with ZERO human help"
+        ]
+        badges = [("Self-Healing AI", ACCENT_ORANGE), ("Zero Human Help", ACCENT_GREEN), ("Fully Autonomous", BLUE)]
+    elif any(k in text_content for k in ["youtube analyse", "yt-analyse", "virality"]):
+        terminal_lines = [
+            "Problem: Creators don't know if their video will get views before posting",
+            "What It Does: AI watches the video and predicts virality score (94/100)",
+            "Result: Suggests instant edits to keep viewers watching until the end"
+        ]
+        badges = [("Virality Predictor", BLUE), ("Viewer Retention", ACCENT_PURPLE), ("Smart Suggestions", ACCENT_GREEN)]
+    elif any(k in text_content for k in ["cropocalypse", "steam"]):
+        terminal_lines = [
+            "Project: 3D farming game fully created from scratch",
+            "Gameplay: Build automated farms that harvest crops while you play",
+            "Status: Published on the official Steam Store and playable on PC"
+        ]
+        badges = [("Live on Steam", ACCENT_ORANGE), ("Playable Game", BLUE), ("Made with Unity", ACCENT_GREEN)]
+    elif any(k in text_content for k in ["finish & click", "finish and click", "vocalcleaner", "saas"]):
+        terminal_lines = [
+            "Idea: Turn frustrating everyday tasks into simple 1-click web tools",
+            "Live Apps: Project management for teams + AI voice cleaner for creators",
+            "Access: Live on the internet right now, used by real people every day"
+        ]
+        badges = [("Live on Web", ACCENT_GREEN), ("Simple 1-Click", BLUE), ("Real Users", ACCENT_PURPLE)]
+    elif any(k in text_content for k in ["precision in engineering", "contact", "discipline"]):
+        terminal_lines = [
+            "Discipline: Learned from years of competitive football training",
+            "Engineering: Clean, reliable software that simply works every time",
+            "Let's Connect: Always open to build ambitious projects together"
+        ]
+        badges = [("Football & Code", BLUE), ("High Precision", ACCENT_GREEN), ("Open to Collab", ACCENT_PURPLE)]
+    elif any(k in text_content for k in ["idea to saas", "ideatosaas", "prototype"]):
+        terminal_lines = [
+            "$ ideatosaas generate --prompt \"autonomous system\"",
+            "[OK] React 18 live sandbox synthesized in <60s",
+            "[INFO] AI PRD Architect + automated ZIP export active"
+        ]
+        badges = [("SaaS Factory", ACCENT_PURPLE), ("React 18", BLUE), ("Zero Dependency", ACCENT_GREEN)]
+    elif any(k in text_content for k in ["pyauditor", "static analysis", "ast"]):
+        terminal_lines = [
+            "$ pyauditor scan ./core --strict",
+            "[PASS] 25 static rules checked across 14,000 LOC in 1.4s",
+            "[INFO] Pure Python stdlib • Zero external dependencies"
+        ]
+        badges = [("Sub-2-Second", ACCENT_GREEN), ("25 AST Rules", BLUE), ("Zero Dependencies", ACCENT_ORANGE)]
+    elif any(k in text_content for k in ["precision in engineering", "contact", "discipline"]):
+        terminal_lines = [
+            "$ contact --github @oguzemirtopuz",
+            "[CONNECTED] oguzemirtopuz.github.io • oguzemirtopuz10@gmail.com",
+            "[MOTTO] Discipline in football. Precision in engineering. Autonomy in software."
+        ]
+        badges = [("High-Signal Collab", BLUE), ("Open Source", ACCENT_GREEN), ("Global Builder", ACCENT_PURPLE)]
+
+    # General Repository keywords
+    elif any(k in text_content for k in ["memory", "vector", "recall", "chroma", "store", "database"]):
         terminal_lines = [
             f"$ {clean_proj} memory --query \"vector_context\" --top-k 5",
             f"[OK] ChromaDB vector store indexed ({clean_slug})",
@@ -262,10 +330,13 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
     return terminal_lines, badges
 
 
-def make_text_scene(title: str, body: str, project_title: str, index: int, total: int) -> Image.Image:
+def make_text_scene(
+    title: str, body: str, project_title: str, index: int, total: int,
+    header_label: str = "FEATURE SHOWCASE", footer_text: str = ""
+) -> Image.Image:
     image = _base_canvas()
     draw = ImageDraw.Draw(image)
-    _header(draw, project_title)
+    _header(draw, project_title, label=header_label)
 
     tab_slug = re.sub(r"[^a-zA-Z0-9_\-]", "", title.lower().replace(" ", "_"))[:16] or f"mod_{index}"
     frame = (105, 215, WIDTH - 95, HEIGHT - 105)
@@ -286,11 +357,11 @@ def make_text_scene(title: str, body: str, project_title: str, index: int, total
     term_x2, term_y2 = frame[2] - 60, frame[3] - 90
     if term_y2 - term_y1 >= 110:
         draw.rounded_rectangle((term_x1, term_y1, term_x2, term_y2), radius=12, fill="#080c17", outline="#1e293b", width=1)
-        mono_f = _font(20, mono=True)
-        draw.text((term_x1 + 25, term_y1 + 22), terminal_lines[0], font=mono_f, fill="#38bdf8")
-        draw.text((term_x1 + 25, term_y1 + 58), terminal_lines[1], font=mono_f, fill=ACCENT_GREEN if "[OK]" in terminal_lines[1] or "[PASS]" in terminal_lines[1] else ACCENT_ORANGE)
-        if term_y2 - term_y1 >= 140:
-            draw.text((term_x1 + 25, term_y1 + 94), terminal_lines[2], font=mono_f, fill=MUTED)
+        card_font = _font(21, bold=False)
+        draw.text((term_x1 + 25, term_y1 + 20), f">  {terminal_lines[0]}", font=card_font, fill="#38bdf8")
+        draw.text((term_x1 + 25, term_y1 + 56), f"[OK] {terminal_lines[1]}", font=card_font, fill=ACCENT_GREEN)
+        if term_y2 - term_y1 >= 135:
+            draw.text((term_x1 + 25, term_y1 + 92), f"[i]  {terminal_lines[2]}", font=card_font, fill="#e2e8f0")
 
     badge_y = frame[3] - 65
     bx = 160
@@ -300,66 +371,23 @@ def make_text_scene(title: str, body: str, project_title: str, index: int, total
         draw.text((bx + 16, badge_y + 6), b_text, font=_font(18, True), fill=WHITE)
         bx += bw + 18
 
-    _footer(draw, index, total)
+    _footer(draw, index, total, footer_text=footer_text)
     return image
 
 
-def make_image_scene(
-    image_path: Path, project_title: str, index: int, total: int
-) -> Image.Image:
-    image = _base_canvas()
-    draw = ImageDraw.Draw(image)
-    _header(draw, project_title, "FEATURED SCREENSHOT")
-
-    frame = (105, 215, WIDTH - 95, HEIGHT - 105)
-    inner_top = _draw_window_frame(draw, frame, tab_name=image_path.name)
-
-    inner_x1 = frame[0] + 25
-    inner_y1 = inner_top
-    inner_x2 = frame[2] - 25
-    inner_y2 = frame[3] - 25
-    inner_w = inner_x2 - inner_x1
-    inner_h = inner_y2 - inner_y1
-
-    try:
-        with Image.open(image_path) as source:
-            source = ImageOps.exif_transpose(source).convert("RGB")
-            source.thumbnail((inner_w, inner_h), Image.Resampling.LANCZOS)
-            px = inner_x1 + (inner_w - source.width) // 2
-            py = inner_y1 + (inner_h - source.height) // 2
-            image.paste(source, (px, py))
-    except (OSError, ValueError) as exc:
-        draw.text((inner_x1 + 30, inner_y1 + 50), f"Could not load image: {exc}", font=_font(22), fill=MUTED)
-
-    _footer(draw, index, total)
-    return image
-
-
-def fetch_github_repos(username: str) -> list[dict]:
-    url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=15"
-    req = urllib.request.Request(url, headers={"User-Agent": "Jarvis-Preview-Generator"})
-    try:
-        with urllib.request.urlopen(req, timeout=10) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except Exception as exc:
-        print(f"[!] GitHub API error: {exc}", file=sys.stderr)
-        return []
-
-
-def fetch_github_readme(username: str, repo_name: str) -> str:
-    for branch in ["main", "master"]:
-        url = f"https://raw.githubusercontent.com/{username}/{repo_name}/{branch}/README.md"
-        req = urllib.request.Request(url, headers={"User-Agent": "Jarvis-Preview-Generator"})
-        try:
-            with urllib.request.urlopen(req, timeout=10) as response:
-                return response.read().decode("utf-8")
-        except Exception:
-            continue
-    return ""
+def get_portfolio_scenes() -> list[tuple[str, str]]:
+    """Curated, high-impact portfolio scenes for Oğuz Emir Topuz focusing on the 3 Masterpieces."""
+    return [
+        ("Shipped, Not Showcased.", "Autonomous AI systems, deployed SaaS platforms, and developer tooling — built from scratch."),
+        ("JARVIS — Cognitive AI Operating System", "39-module autonomous cognitive agent with episodic vector memory, reflection self-healing, and dynamic skill synthesis."),
+        ("YouTube Analyse Pro — SaaS Edition", "Multi-modal virality platform: OpenCV frame analysis, Librosa audio intelligence, and multi-agent debate synthesis."),
+        ("Cropocalypse — Listed on Steam", "3D cell-shaded Unity/C# farming simulator with automated agricultural pipelines, publicly listed on Steam."),
+        ("Finish & Click · VocalCleaner · Idea to SaaS", "Enterprise Kanban with Supabase RLS + Dual-engine AI mastering live on Render + Autonomous SaaS prototyping."),
+        ("Precision in Engineering. Autonomy in Software.", "Discipline in football. Precision in engineering. Open for high-signal collaboration & ambitious builds.")
+    ]
 
 
 def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tuple[str, str]]]:
-    """Intelligently extract project title and features with adaptive complexity detection."""
     text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     lines = text.splitlines()
 
@@ -373,7 +401,6 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
 
     features: list[tuple[str, str]] = []
     
-    # 1. Parse comparison tables
     for line in lines:
         if "|" in line and ("**" in line or "Self-heals" in line or "Vector" in line or "Router" in line):
             parts = [p.strip() for p in line.split("|") if p.strip()]
@@ -383,7 +410,6 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
                 if len(title) >= 4 and len(body) >= 12:
                     features.append((title[:50], body))
 
-    # 2. Parse bullet points across sections
     for line in lines:
         bullet = re.match(r"^\s*(?:[-*+]|\d+[.)])\s+(.+?)\s*$", line)
         if bullet:
@@ -398,7 +424,6 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
                 if not any(item[:30].lower() in f[1].lower() for f in features):
                     features.append((f"Feature {len(features)+1}", item))
 
-    # Fallback default features
     if not features:
         features = [
             ("Self-Healing Core", "Automatic reflection and recovery when runtime errors occur."),
@@ -407,17 +432,15 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
             ("Dynamic Skill Synthesis", "Synthesizes and runs custom sandboxed tools on the fly.")
         ]
 
-    # Adaptive Complexity Determination:
-    # If max_features is 0 (Auto), determine based on README depth:
     if max_features <= 0:
         total_found = len(features)
         readme_len = len(text)
         if total_found >= 9 or readme_len > 4000:
-            target_limit = 8  # Deep architecture project
+            target_limit = 8
         elif total_found >= 6 or readme_len > 2000:
-            target_limit = 6  # Standard project
+            target_limit = 6
         else:
-            target_limit = 4  # Focused utility / micro-tool
+            target_limit = 4
     else:
         target_limit = max_features
 
@@ -490,13 +513,13 @@ def make_gif(mp4_path: Path, output_gif: Path, fps: int = 10, max_width: int = 9
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="1080p Full HD GitHub README Preview Generator.")
-    parser.add_argument("--github-user", help="GitHub username to inspect public repos")
+    parser = argparse.ArgumentParser(description="1080p Full HD GitHub Showcase & Portfolio Preview Generator.")
+    parser.add_argument("--github-user", help="GitHub username")
     parser.add_argument("--repo", help="Target GitHub repository name")
     parser.add_argument("--readme", default="", help="Local path to README markdown")
     parser.add_argument("--title", default="", help="Custom project title")
+    parser.add_argument("--portfolio", action="store_true", help="Enable Developer Portfolio Showcase mode")
     parser.add_argument("--max-scenes", type=int, default=0, help="Max feature scenes (0=Auto adapt)")
-    parser.add_argument("--images", nargs="*", default=[], help="Screenshots list")
     parser.add_argument("--output-dir", default=".", help="Output directory")
     parser.add_argument("--fps", type=int, default=30, help="MP4 FPS (default: 30)")
     parser.add_argument("--gif-fps", type=int, default=10, help="GIF FPS (default: 10)")
@@ -505,79 +528,54 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    readme_content = ""
-    project_title = args.title.strip()
-
-    if args.github_user:
-        print(f"[*] Fetching repos for @{args.github_user}...")
-        repos = fetch_github_repos(args.github_user)
-        if not repos:
-            print(f"[!] No repos found for @{args.github_user}.", file=sys.stderr)
-            return 1
-
-        selected_repo = None
-        if args.repo:
-            for r in repos:
-                if r["name"].lower() == args.repo.lower():
-                    selected_repo = r
-                    break
-
-        if not selected_repo:
-            selected_repo = repos[0]
-
-        print(f"[✓] Selected Repo: {selected_repo['name']}")
-        project_title = project_title or selected_repo["name"]
-        print(f"[*] Downloading README.md...")
-        readme_content = fetch_github_readme(args.github_user, selected_repo["name"])
-
-    elif args.readme and Path(args.readme).exists():
-        readme_content = Path(args.readme).read_text(encoding="utf-8", errors="replace")
-    elif Path("README.md").exists():
-        readme_content = Path("README.md").read_text(encoding="utf-8", errors="replace")
-
-    parsed_title, features = parse_readme_content(readme_content, max_features=args.max_scenes)
-    final_title = project_title or parsed_title
-
-    print(f"\n[✓] Project: {final_title}")
-    print(f"[✓] Extracted {len(features)} Features (Adaptive Setting: {'Auto' if args.max_scenes==0 else args.max_scenes}):")
-    for t, b in features:
-        print(f"    - {t}: {b[:70]}...")
-
     output_dir = Path(args.output_dir).expanduser()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    scene_specs: list[tuple[str, str, Path | None]] = [
-        ("Autonomous Architecture", "A self-directing cognitive OS that plans, executes, and heals itself.", None)
-    ]
-    for title, body in features:
-        scene_specs.append((title, body, None))
+    is_portfolio = args.portfolio or (args.repo and args.repo.lower() in ["oguzemirtopuz", "portfolio"]) or (args.title and "portfolio" in args.title.lower())
 
-    for img_path_str in args.images[:3]:
-        p = Path(img_path_str)
-        if p.is_file():
-            scene_specs.append((p.stem.title(), f"UI Screenshot: {p.name}", p))
+    if is_portfolio:
+        project_title = "Oğuz Emir Topuz"
+        header_label = "DEVELOPER PORTFOLIO"
+        footer_text = "OĞUZ EMİR TOPUZ  •  AUTONOMOUS AI & SAAS ARCHITECT  •  PRODUCTION SYSTEMS"
+        scenes = get_portfolio_scenes()
+        print(f"\n[★] Developer Portfolio Mode Active: {project_title}")
+        print(f"[✓] Compiling {len(scenes)} curated portfolio showcase scenes...")
+    else:
+        readme_content = ""
+        project_title = args.title.strip()
+        header_label = "FEATURE SHOWCASE"
+        footer_text = "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE"
 
-    total = len(scene_specs)
+        if args.readme and Path(args.readme).exists():
+            readme_content = Path(args.readme).read_text(encoding="utf-8", errors="replace")
+        elif Path("README.md").exists():
+            readme_content = Path("README.md").read_text(encoding="utf-8", errors="replace")
+
+        parsed_title, features = parse_readme_content(readme_content, max_features=args.max_scenes)
+        project_title = project_title or parsed_title
+        scenes = [("Autonomous Architecture", "A self-directing cognitive OS that plans, executes, and heals itself.")] + features
+
     scene_images: list[Image.Image] = []
-    for index, (title, body, image_path) in enumerate(scene_specs, start=1):
-        if image_path:
-            frame = make_image_scene(image_path, final_title, index, total)
-        else:
-            frame = make_text_scene(title, body, final_title, index, total)
+    total = len(scenes)
+    for idx, (title, body) in enumerate(scenes, start=1):
+        frame = make_text_scene(
+            title, body, project_title, idx, total,
+            header_label=header_label, footer_text=footer_text
+        )
         scene_images.append(frame)
 
-    output_mp4 = output_dir / "preview_1080p.mp4"
-    output_gif = output_dir / "preview_1080p.gif"
+    out_mp4 = output_dir / "preview_1080p.mp4"
+    out_gif = output_dir / "preview_1080p.gif"
 
     print(f"\n[*] Rendering 1080p Full HD video ({len(scene_images)} scenes, 30 FPS, 5000k Bitrate)...")
-    build_video(scene_images, output_mp4, fps=args.fps)
-    print(f"[✓] MP4 Ready: {output_mp4.resolve()} ({output_mp4.stat().st_size / (1024*1024):.1f} MB)")
+    build_video(scene_images, out_mp4, fps=args.fps)
+    print(f"[✓] MP4 Ready: {out_mp4.resolve()} ({out_mp4.stat().st_size / (1024*1024):.1f} MB)")
 
     print(f"[*] Rendering optimized GIF (960px, 256 colors)...")
-    make_gif(output_mp4, output_gif, fps=args.gif_fps, max_width=960)
-    print(f"[✓] GIF Ready: {output_gif.resolve()} ({output_gif.stat().st_size / (1024*1024):.1f} MB)")
+    make_gif(out_mp4, out_gif, fps=args.gif_fps, max_width=960)
+    print(f"[✓] GIF Ready: {out_gif.resolve()} ({out_gif.stat().st_size / (1024*1024):.1f} MB)")
 
-    print("\n🎉 Done! 1080p Full HD Preview successfully created.")
+    print("\n🎉 Done! 1080p Full HD Showcase successfully created.")
     return 0
 
 
