@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
 Create a polished GitHub README preview as preview_1080p.mp4 and preview_1080p.gif in 1080p Full HD.
+Supports both 16:9 Landscape (1920x1080) and 9:16 Vertical (1080x1920) formats for Reels/Shorts/TikTok.
+
 Features:
-- 1080p Full HD (1920x1080) crystal-clear output
-- Fully in English (Global GitHub standard)
+- Dual Aspect Ratio: 16:9 Landscape (1920x1080) & 9:16 Vertical (1080x1920)
 - Dual Mode: Repository Showcase Mode + Personal Developer Portfolio Mode
 - Smart Adaptive Scene Count (4 to 12 scenes)
 - Fully dynamic scenes: Terminal logs & Badges change per scene based on topic!
 - Modern macOS window styling, dot-grid high-tech background
-- GitHub Integration: Fetch public repos & READMEs directly via GitHub API
+- Audio Sync & Fade-out support
 - No ImageMagick required!
 
 Dependencies:
@@ -39,7 +40,6 @@ except ImportError:
     from moviepy.editor import ImageClip, CompositeVideoClip
 
 
-WIDTH, HEIGHT = 1920, 1080
 BACKGROUND = "#090d16"
 PANEL = "#0f172a"
 BORDER = "#1e293b"
@@ -53,8 +53,27 @@ ACCENT_GREEN = "#10b981"
 ACCENT_PURPLE = "#a855f7"
 ACCENT_ORANGE = "#fb923c"
 SCENE_SECONDS = 3.5
-TRANSITION_SECONDS = 0.5
+TRANSITION_SECONDS = 0.0
 SUPPORTED_IMAGES = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
+
+TAG_MAP = {
+    "problem": ("THE CHALLENGE", "#f43f5e", "arrow"),
+    "what jarvis does": ("AUTONOMOUS INNOVATION", "#0ea5e9", "check"),
+    "what it does": ("SMART AI CAPABILITY", "#0ea5e9", "check"),
+    "result": ("PROVEN RESULT", "#10b981", "star"),
+    "project": ("INDIE GAME PROJECT", "#fb923c", "arrow"),
+    "gameplay": ("GAMEPLAY & SIMULATION", "#0ea5e9", "check"),
+    "status": ("STEAM RECOGNITION", "#10b981", "star"),
+    "idea": ("CORE VISION", "#fb923c", "arrow"),
+    "live apps": ("DEPLOYED SUITE", "#0ea5e9", "check"),
+    "access": ("PRODUCTION STATUS", "#10b981", "star"),
+    "discipline": ("ATHLETIC DISCIPLINE", "#38bdf8", "arrow"),
+    "engineering": ("ENGINEERING RIGOR", "#10b981", "check"),
+    "let's connect": ("OPEN COLLABORATION", "#a855f7", "star"),
+    "builder": ("THE CREATOR", "#38bdf8", "arrow"),
+    "focus": ("TECHNICAL FOCUS", "#0ea5e9", "check"),
+    "proof": ("PROVEN TRACK RECORD", "#10b981", "star"),
+}
 
 
 def _font(size: int, bold: bool = False, mono: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
@@ -126,46 +145,32 @@ def _draw_wrapped(
     return y
 
 
-def _base_canvas() -> Image.Image:
-    image = Image.new("RGB", (WIDTH, HEIGHT), BACKGROUND)
+def _base_canvas(width: int, height: int, is_vertical: bool = False) -> Image.Image:
+    image = Image.new("RGB", (width, height), BACKGROUND)
     draw = ImageDraw.Draw(image)
 
-    draw.ellipse((WIDTH - 550, -300, WIDTH + 200, 320), fill="#0d2342")
-    draw.ellipse((WIDTH - 400, -200, WIDTH + 100, 200), fill="#103663")
-    draw.ellipse((-300, HEIGHT - 350, 300, HEIGHT + 200), fill="#0f2038")
+    if is_vertical:
+        # Vertical glows (top-right & bottom-left)
+        draw.ellipse((width - 400, -250, width + 250, 400), fill="#0d2342")
+        draw.ellipse((-250, height - 450, 350, height + 250), fill="#0f2038")
+        draw.ellipse((width - 300, height // 2 - 200, width + 150, height // 2 + 300), fill="#103663")
+        grid_step = 36
+    else:
+        # Landscape glows
+        draw.ellipse((width - 550, -300, width + 200, 320), fill="#0d2342")
+        draw.ellipse((width - 400, -200, width + 100, 200), fill="#103663")
+        draw.ellipse((-300, height - 350, 300, height + 200), fill="#0f2038")
+        grid_step = 40
 
     grid_color = "#162338"
-    for gx in range(40, WIDTH, 40):
-        for gy in range(40, HEIGHT, 40):
+    for gx in range(grid_step, width, grid_step):
+        for gy in range(grid_step, height, grid_step):
             draw.point((gx, gy), fill=grid_color)
             draw.point((gx + 1, gy), fill=grid_color)
 
-    draw.rounded_rectangle((55, 65, 67, HEIGHT - 65), radius=5, fill=BLUE)
+    if not is_vertical:
+        draw.rounded_rectangle((55, 65, 67, height - 65), radius=5, fill=BLUE)
     return image
-
-
-def _header(draw: ImageDraw.ImageDraw, title: str, label: str = "FEATURE SHOWCASE") -> None:
-    label_font = _font(20, True)
-    pill_w = draw.textbbox((0, 0), label, font=label_font)[2] + 34
-    draw.rounded_rectangle((105, 65, 105 + pill_w, 110), radius=22, fill="#1e293b", outline="#334155", width=2)
-    draw.text((122, 75), label, font=label_font, fill=BLUE)
-
-    title_font = _font(48, True)
-    title_lines = _wrap_text(draw, title, title_font, WIDTH - 280)
-    title_y = 125
-    for line in title_lines[:1]:
-        draw.text((105, title_y), line, font=title_font, fill=WHITE)
-
-
-def _footer(draw: ImageDraw.ImageDraw, index: int, total: int, footer_text: str = "") -> None:
-    text = footer_text or "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE"
-    draw.text((105, HEIGHT - 68), text, font=_font(18, True), fill=MUTED)
-
-    bar_x, bar_y, bar_w = WIDTH - 280, HEIGHT - 60, 150
-    draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 10), radius=5, fill="#1e293b")
-    active_w = max(12, int(bar_w * index / max(total, 1)))
-    draw.rounded_rectangle((bar_x, bar_y, bar_x + active_w, bar_y + 10), radius=5, fill=BLUE)
-    draw.text((WIDTH - 110, HEIGHT - 72), f"{index:02d}/{total:02d}", font=_font(18, True), fill=MUTED)
 
 
 def _draw_window_frame(draw: ImageDraw.ImageDraw, frame: tuple[int, int, int, int], tab_name: str = "main.py") -> int:
@@ -195,7 +200,7 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
     clean_proj = re.sub(r"[^a-zA-Z0-9_\-]", "", project_title.split()[0]).lower() or "app"
     clean_slug = re.sub(r"[^a-zA-Z0-9_\-]", "", title.lower().replace(" ", "_"))[:18] or "core"
 
-    # Ultra-simple, human-first portfolio lines (zero developer jargon, crystal clear for anyone)
+    # Human-first portfolio lines
     if any(k in text_content for k in ["shipped, not", "oguzemirtopuz", "portfolio", "builder"]):
         terminal_lines = [
             "Builder: 15-year-old software creator & AI architect",
@@ -238,27 +243,6 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
             "Let's Connect: Always open to build ambitious projects together"
         ]
         badges = [("Football & Code", BLUE), ("High Precision", ACCENT_GREEN), ("Open to Collab", ACCENT_PURPLE)]
-    elif any(k in text_content for k in ["idea to saas", "ideatosaas", "prototype"]):
-        terminal_lines = [
-            "$ ideatosaas generate --prompt \"autonomous system\"",
-            "[OK] React 18 live sandbox synthesized in <60s",
-            "[INFO] AI PRD Architect + automated ZIP export active"
-        ]
-        badges = [("SaaS Factory", ACCENT_PURPLE), ("React 18", BLUE), ("Zero Dependency", ACCENT_GREEN)]
-    elif any(k in text_content for k in ["pyauditor", "static analysis", "ast"]):
-        terminal_lines = [
-            "$ pyauditor scan ./core --strict",
-            "[PASS] 25 static rules checked across 14,000 LOC in 1.4s",
-            "[INFO] Pure Python stdlib • Zero external dependencies"
-        ]
-        badges = [("Sub-2-Second", ACCENT_GREEN), ("25 AST Rules", BLUE), ("Zero Dependencies", ACCENT_ORANGE)]
-    elif any(k in text_content for k in ["precision in engineering", "contact", "discipline"]):
-        terminal_lines = [
-            "$ contact --github @oguzemirtopuz",
-            "[CONNECTED] oguzemirtopuz.github.io • oguzemirtopuz10@gmail.com",
-            "[MOTTO] Discipline in football. Precision in engineering. Autonomy in software."
-        ]
-        badges = [("High-Signal Collab", BLUE), ("Open Source", ACCENT_GREEN), ("Global Builder", ACCENT_PURPLE)]
 
     # General Repository keywords
     elif any(k in text_content for k in ["memory", "vector", "recall", "chroma", "store", "database"]):
@@ -296,13 +280,6 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
             "[INFO] 100% Local processing • Zero external telemetry"
         ]
         badges = [("100% Local", ACCENT_GREEN), ("Air-Gapped Ready", BLUE), ("Zero Telemetry", ACCENT_ORANGE)]
-    elif any(k in text_content for k in ["router", "semantic", "latency", "fast", "cache", "speed"]):
-        terminal_lines = [
-            f"$ {clean_proj} route --command \"check status\"",
-            "[OK] Semantic router matched intent in 0.4ms (Cache Hit)",
-            "[INFO] Bypassed heavy LLM call • Immediate dispatch"
-        ]
-        badges = [("Sub-Millisecond", BLUE), ("Semantic Router", ACCENT_GREEN), ("Zero Cost", ACCENT_PURPLE)]
     else:
         cycle = index % 3
         if cycle == 0:
@@ -330,16 +307,27 @@ def get_dynamic_terminal_and_badges(title: str, body: str, index: int, project_t
     return terminal_lines, badges
 
 
-def make_text_scene(
+def make_landscape_text_scene(
     title: str, body: str, project_title: str, index: int, total: int,
     header_label: str = "FEATURE SHOWCASE", footer_text: str = ""
 ) -> Image.Image:
-    image = _base_canvas()
+    width, height = 1920, 1080
+    image = _base_canvas(width, height, is_vertical=False)
     draw = ImageDraw.Draw(image)
-    _header(draw, project_title, label=header_label)
+
+    # Pill label
+    label_font = _font(20, True)
+    pill_w = draw.textbbox((0, 0), header_label, font=label_font)[2] + 34
+    draw.rounded_rectangle((105, 65, 105 + pill_w, 110), radius=22, fill="#1e293b", outline="#334155", width=2)
+    draw.text((122, 75), header_label, font=label_font, fill=BLUE)
+
+    title_font = _font(48, True)
+    title_lines = _wrap_text(draw, project_title, title_font, width - 280)
+    for line in title_lines[:1]:
+        draw.text((105, 125), line, font=title_font, fill=WHITE)
 
     tab_slug = re.sub(r"[^a-zA-Z0-9_\-]", "", title.lower().replace(" ", "_"))[:16] or f"mod_{index}"
-    frame = (105, 215, WIDTH - 95, HEIGHT - 105)
+    frame = (105, 215, width - 95, height - 105)
     content_y = _draw_window_frame(draw, frame, tab_name=f"{tab_slug}.py")
 
     draw.text((160, content_y), ">", font=_font(42, True, mono=True), fill=BLUE)
@@ -371,7 +359,174 @@ def make_text_scene(
         draw.text((bx + 16, badge_y + 6), b_text, font=_font(18, True), fill=WHITE)
         bx += bw + 18
 
-    _footer(draw, index, total, footer_text=footer_text)
+    # Footer
+    f_text = footer_text or "OPEN SOURCE  •  LOCAL PRIVACY  •  AUTONOMOUS ARCHITECTURE"
+    draw.text((105, height - 68), f_text, font=_font(18, True), fill=MUTED)
+
+    bar_x, bar_y, bar_w = width - 280, height - 60, 150
+    draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 10), radius=5, fill="#1e293b")
+    active_w = max(12, int(bar_w * index / max(total, 1)))
+    draw.rounded_rectangle((bar_x, bar_y, bar_x + active_w, bar_y + 10), radius=5, fill=BLUE)
+    draw.text((width - 110, height - 72), f"{index:02d}/{total:02d}", font=_font(18, True), fill=MUTED)
+
+    return image
+
+
+def _draw_bullet_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: str, style: str = "dot") -> None:
+    if style == "arrow":
+        draw.polygon([(cx - 7, cy - 9), (cx + 7, cy), (cx - 7, cy + 9)], fill=color)
+    elif style == "check":
+        draw.line([(cx - 8, cy), (cx - 2, cy + 7), (cx + 9, cy - 7)], fill=color, width=3)
+    elif style == "star":
+        draw.polygon([(cx, cy - 10), (cx + 8, cy), (cx, cy + 10), (cx - 8, cy)], fill=color)
+    else:
+        draw.ellipse((cx - 6, cy - 6, cx + 6, cy + 6), fill=color)
+
+
+def make_vertical_text_scene(
+    title: str, body: str, project_title: str, index: int, total: int,
+    header_label: str = "DEVELOPER PORTFOLIO", footer_text: str = ""
+) -> Image.Image:
+    """Renders a pixel-perfect 9:16 Vertical (1080x1920) mobile-first showcase slide."""
+    width, height = 1080, 1920
+    image = Image.new("RGB", (width, height), BACKGROUND)
+    draw = ImageDraw.Draw(image)
+
+    # Ambient subtle grid
+    for gx in range(40, width, 55):
+        for gy in range(40, height, 55):
+            draw.point((gx, gy), fill="#141c2c")
+
+    # 1. Top Header Area
+    top_y = 85
+    pill_font = _font(19, True)
+    tag = header_label or "OĞUZ EMİR TOPUZ  •  MASTERPIECE SHOWCASE"
+    pill_w = draw.textbbox((0, 0), tag, font=pill_font)[2] + 36
+    draw.rounded_rectangle((65, top_y, 65 + pill_w, top_y + 46), radius=23, fill="#131d31", outline="#1e293b", width=2)
+    draw.text((83, top_y + 10), tag, font=pill_font, fill=BLUE)
+
+    title_font = _font(56, True)
+    draw.text((65, top_y + 68), project_title, font=title_font, fill=WHITE)
+
+    sub_font = _font(25, False)
+    draw.text((65, top_y + 144), "Autonomous AI  •  Deployed SaaS  •  Developer Tooling", font=sub_font, fill=MUTED)
+
+    # 2. Window Content layout calculations
+    fx1 = 65
+    fy1 = top_y + 205
+    fx2 = width - 65
+
+    cur_y = fy1 + 82
+    head_font = _font(40, True)
+    head_lines = _wrap_text(draw, title, head_font, (fx2 - fx1) - 100)
+    cur_y += len(head_lines[:2]) * 52 + 12
+
+    desc_font = _font(25, False)
+    desc_lines = _wrap_text(draw, body, desc_font, (fx2 - fx1) - 80)
+    cur_y += len(desc_lines[:3]) * 38 + 36
+
+    card_h = 235
+    card_gap = 24
+    cards_bottom = cur_y + 3 * card_h + 2 * card_gap
+
+    badge_box_h = 135
+    fy2 = cards_bottom + badge_box_h + 55
+    frame = (fx1, fy1, fx2, fy2)
+
+    # Draw Window Frame
+    draw.rounded_rectangle(frame, radius=24, fill=PANEL, outline="#1e293b", width=2)
+    draw.rounded_rectangle((fx1, fy1, fx2, fy1 + 58), radius=24, fill=HEADER_BAR)
+    draw.rectangle((fx1, fy1 + 32, fx2, fy1 + 58), fill=HEADER_BAR)
+    draw.line([(fx1, fy1 + 58), (fx2, fy1 + 58)], fill="#1e293b", width=2)
+
+    # Window dots
+    draw.ellipse((fx1 + 24, fy1 + 23, fx1 + 38, fy1 + 37), fill="#f43f5e")
+    draw.ellipse((fx1 + 46, fy1 + 23, fx1 + 60, fy1 + 37), fill="#eab308")
+    draw.ellipse((fx1 + 68, fy1 + 23, fx1 + 82, fy1 + 37), fill="#22c55e")
+
+    # Tab title
+    slug = f"showcase_{index:02d}.tsx"
+    draw.text((fx1 + 105, fy1 + 19), slug, font=_font(18, True), fill=MUTED)
+
+    # Draw Title & Desc
+    draw_y = fy1 + 82
+    _draw_bullet_icon(draw, fx1 + 45, draw_y + 24, BLUE, "arrow")
+    for hl in head_lines[:2]:
+        draw.text((fx1 + 65, draw_y), hl, font=head_font, fill=WHITE)
+        draw_y += 52
+
+    draw_y += 12
+    for dl in desc_lines[:3]:
+        draw.text((fx1 + 45, draw_y), dl, font=desc_font, fill=TEXT_SUB)
+        draw_y += 38
+
+    # 3. Dynamic Terminal Lines & Structured Cards
+    terminal_lines, badges = get_dynamic_terminal_and_badges(title, body, index, project_title)
+
+    card_x1 = fx1 + 35
+    card_x2 = fx2 - 35
+    card_w = card_x2 - card_x1
+
+    for c_idx, raw_text in enumerate(terminal_lines[:3]):
+        c_y1 = cur_y + c_idx * (card_h + card_gap)
+        c_y2 = c_y1 + card_h
+
+        # Parse prefix
+        if ":" in raw_text:
+            pfx, _, clean_text = raw_text.partition(":")
+            pfx = pfx.strip().lower()
+            clean_text = clean_text.strip()
+        else:
+            pfx = ""
+            clean_text = raw_text.strip()
+
+        c_label, c_color, c_icon = TAG_MAP.get(pfx, ("CORE HIGHLIGHT", BLUE, "check"))
+
+        # Card container
+        draw.rounded_rectangle((card_x1, c_y1, card_x2, c_y2), radius=18, fill="#080c16", outline="#1e293b", width=2)
+
+        # Header tag pill inside card
+        tag_f = _font(16, True)
+        tw = draw.textbbox((0, 0), c_label, font=tag_f)[2] + 26
+        draw.rounded_rectangle((card_x1 + 25, c_y1 + 20, card_x1 + 25 + tw, c_y1 + 48), radius=14, fill="#131d31", outline=c_color, width=2)
+        draw.text((card_x1 + 38, c_y1 + 24), c_label, font=tag_f, fill=c_color)
+
+        text_f = _font(28, False)
+        wrapped = _wrap_text(draw, clean_text, text_f, card_w - 70)
+        ty = c_y1 + 72
+        for wline in wrapped[:3]:
+            draw.text((card_x1 + 35, ty), wline, font=text_f, fill=WHITE)
+            ty += 40
+
+    # 4. Badges Container
+    badge_box_y1 = cards_bottom + 25
+    badge_box_y2 = badge_box_y1 + badge_box_h
+    draw.rounded_rectangle((card_x1, badge_box_y1, card_x2, badge_box_y2), radius=18, fill="#080c16", outline="#1e293b", width=2)
+
+    # Badges header
+    tag_b = "SYSTEM ATTRIBUTES & PRODUCTION PROOF"
+    draw.text((card_x1 + 25, badge_box_y1 + 18), tag_b, font=_font(15, True), fill=MUTED)
+
+    # Badges row
+    bx = card_x1 + 25
+    by = badge_box_y1 + 52
+    for b_text, b_color in badges:
+        bw = draw.textbbox((0, 0), b_text, font=_font(20, True))[2] + 32
+        draw.rounded_rectangle((bx, by, bx + bw, by + 48), radius=24, fill="#131d31", outline=b_color, width=2)
+        draw.text((bx + 16, by + 12), b_text, font=_font(20, True), fill=WHITE)
+        bx += bw + 16
+
+    # 5. Bottom Mobile Footer
+    foot_y = height - 80
+    foot_text = footer_text or "SHIPPED, NOT SHOWCASED  •  15 Y/O BUILDER"
+    draw.text((65, foot_y), foot_text, font=_font(18, True), fill=MUTED)
+
+    bar_x, bar_y, bar_w = width - 260, foot_y + 6, 120
+    draw.rounded_rectangle((bar_x, bar_y, bar_x + bar_w, bar_y + 8), radius=4, fill="#1e293b")
+    active_w = max(16, int(bar_w * index / max(total, 1)))
+    draw.rounded_rectangle((bar_x, bar_y, bar_x + active_w, bar_y + 8), radius=4, fill=BLUE)
+    draw.text((width - 120, foot_y), f"{index:02d} / {total:02d}", font=_font(18, True), fill=MUTED)
+
     return image
 
 
@@ -447,14 +602,15 @@ def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tu
     return project_title or "Cognitive AI Architecture", features[:target_limit]
 
 
-def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, audio_path: Path | None = None) -> None:
+def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, audio_path: Path | None = None, is_vertical: bool = False) -> None:
+    width, height = (1080, 1920) if is_vertical else (1920, 1080)
     clips = []
     step = SCENE_SECONDS - TRANSITION_SECONDS
     for index, image in enumerate(scene_images):
         clip = ImageClip(np.asarray(image.convert("RGB")))
         clip = clip.with_duration(SCENE_SECONDS) if hasattr(clip, "with_duration") else clip.set_duration(SCENE_SECONDS)
         clip = clip.with_start(index * step) if hasattr(clip, "with_start") else clip.set_start(index * step)
-        if index > 0:
+        if index > 0 and TRANSITION_SECONDS > 0:
             try:
                 from moviepy import vfx
                 clip = clip.with_effects([vfx.CrossFadeIn(TRANSITION_SECONDS)])
@@ -464,7 +620,7 @@ def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, aud
         clips.append(clip)
 
     duration = SCENE_SECONDS + max(0, len(clips) - 1) * step
-    composite = CompositeVideoClip(clips, size=(WIDTH, HEIGHT), bg_color=(9, 13, 22))
+    composite = CompositeVideoClip(clips, size=(width, height), bg_color=(9, 13, 22))
     composite = composite.with_duration(duration) if hasattr(composite, "with_duration") else composite.set_duration(duration)
 
     audio_clip = None
@@ -505,7 +661,7 @@ def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, aud
                 pass
 
 
-def make_gif(mp4_path: Path, output_gif: Path, fps: int = 10, max_width: int = 960) -> None:
+def make_gif(mp4_path: Path, output_gif: Path, fps: int = 10, max_width: int = 720) -> None:
     try:
         from moviepy import VideoFileClip
     except ImportError:
@@ -544,6 +700,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--readme", default="", help="Local path to README markdown")
     parser.add_argument("--title", default="", help="Custom project title")
     parser.add_argument("--portfolio", action="store_true", help="Enable Developer Portfolio Showcase mode")
+    parser.add_argument("--vertical", action="store_true", help="Render in 9:16 Vertical format (1080x1920)")
     parser.add_argument("--max-scenes", type=int, default=0, help="Max feature scenes (0=Auto adapt)")
     parser.add_argument("--output-dir", default=".", help="Output directory")
     parser.add_argument("--fps", type=int, default=30, help="MP4 FPS (default: 30)")
@@ -557,14 +714,15 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     is_portfolio = args.portfolio or (args.repo and args.repo.lower() in ["oguzemirtopuz", "portfolio"]) or (args.title and "portfolio" in args.title.lower())
+    is_vertical = args.vertical
 
     if is_portfolio:
         project_title = "Oğuz Emir Topuz"
         header_label = "DEVELOPER PORTFOLIO"
-        footer_text = "OĞUZ EMİR TOPUZ  •  AUTONOMOUS AI & SAAS ARCHITECT  •  PRODUCTION SYSTEMS"
+        footer_text = "OĞUZ EMİR TOPUZ  •  AUTONOMOUS AI & SAAS ARCHITECT"
         scenes = get_portfolio_scenes()
         print(f"\n[★] Developer Portfolio Mode Active: {project_title}")
-        print(f"[✓] Compiling {len(scenes)} curated portfolio showcase scenes...")
+        print(f"[✓] Compiling {len(scenes)} curated portfolio showcase scenes (Orientation: {'9:16 Vertical' if is_vertical else '16:9 Landscape'})...")
     else:
         readme_content = ""
         project_title = args.title.strip()
@@ -583,27 +741,35 @@ def main() -> int:
     scene_images: list[Image.Image] = []
     total = len(scenes)
     for idx, (title, body) in enumerate(scenes, start=1):
-        frame = make_text_scene(
-            title, body, project_title, idx, total,
-            header_label=header_label, footer_text=footer_text
-        )
+        if is_vertical:
+            frame = make_vertical_text_scene(
+                title, body, project_title, idx, total,
+                header_label=header_label, footer_text=footer_text
+            )
+        else:
+            frame = make_landscape_text_scene(
+                title, body, project_title, idx, total,
+                header_label=header_label, footer_text=footer_text
+            )
         scene_images.append(frame)
 
-    out_mp4 = output_dir / "preview_1080p.mp4"
-    out_gif = output_dir / "preview_1080p.gif"
+    prefix = "preview_9x16" if is_vertical else "preview_1080p"
+    out_mp4 = output_dir / f"{prefix}.mp4"
+    out_gif = output_dir / f"{prefix}.gif"
 
     default_audio = Path(__file__).parent / "assets" / "ambient_tech.mp3"
     audio_to_use = default_audio if default_audio.is_file() else None
 
-    print(f"\n[*] Rendering 1080p Full HD video ({len(scene_images)} scenes, 30 FPS, 5000k Bitrate, Audio: {'Enabled' if audio_to_use else 'Muted'})...")
-    build_video(scene_images, out_mp4, fps=args.fps, audio_path=audio_to_use)
+    print(f"\n[*] Rendering Full HD video ({len(scene_images)} scenes, 30 FPS, Bitrate 5000k, Audio: {'Enabled' if audio_to_use else 'Muted'})...")
+    build_video(scene_images, out_mp4, fps=args.fps, audio_path=audio_to_use, is_vertical=is_vertical)
     print(f"[✓] MP4 Ready: {out_mp4.resolve()} ({out_mp4.stat().st_size / (1024*1024):.1f} MB)")
 
-    print(f"[*] Rendering optimized GIF (960px, 256 colors)...")
-    make_gif(out_mp4, out_gif, fps=args.gif_fps, max_width=960)
+    gif_max_w = 640 if is_vertical else 960
+    print(f"[*] Rendering optimized GIF ({gif_max_w}px, 256 colors)...")
+    make_gif(out_mp4, out_gif, fps=args.gif_fps, max_width=gif_max_w)
     print(f"[✓] GIF Ready: {out_gif.resolve()} ({out_gif.stat().st_size / (1024*1024):.1f} MB)")
 
-    print("\n🎉 Done! 1080p Full HD Showcase successfully created.")
+    print(f"\n🎉 Done! {'9:16 Vertical' if is_vertical else '16:9 Landscape'} Showcase successfully created.")
     return 0
 
 
