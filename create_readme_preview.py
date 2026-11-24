@@ -542,6 +542,32 @@ def get_portfolio_scenes() -> list[tuple[str, str]]:
     ]
 
 
+def fetch_github_repos(username: str) -> list[dict]:
+    """Fetch public repositories for the given GitHub username."""
+    url = f"https://api.github.com/users/{username}/repos?sort=updated&per_page=100"
+    req = urllib.request.Request(url, headers={"User-Agent": "README-Preview-Generator"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        print(f"[!] GitHub API error: {exc}", file=sys.stderr)
+        return []
+
+
+def fetch_github_readme(username: str, repo_name: str) -> str:
+    """Download the raw README.md for a given user and repository."""
+    for branch in ["main", "master", "develop"]:
+        url = f"https://raw.githubusercontent.com/{username}/{repo_name}/{branch}/README.md"
+        req = urllib.request.Request(url, headers={"User-Agent": "README-Preview-Generator"})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as response:
+                return response.read().decode("utf-8")
+        except Exception:
+            continue
+    return ""
+
+
+
 def parse_readme_content(text: str, max_features: int = 0) -> tuple[str, list[tuple[str, str]]]:
     text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     lines = text.splitlines()
