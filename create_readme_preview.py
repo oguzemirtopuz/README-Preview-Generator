@@ -372,6 +372,10 @@ def make_landscape_text_scene(
     return image
 
 
+# Backward compatibility alias for app.py
+make_text_scene = make_landscape_text_scene
+
+
 def _draw_bullet_icon(draw: ImageDraw.ImageDraw, cx: int, cy: int, color: str, style: str = "dot") -> None:
     if style == "arrow":
         draw.polygon([(cx - 7, cy - 9), (cx + 7, cy), (cx - 7, cy + 9)], fill=color)
