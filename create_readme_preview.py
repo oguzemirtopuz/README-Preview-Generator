@@ -21,6 +21,8 @@ import argparse
 import json
 import re
 import sys
+import shutil
+import subprocess
 import urllib.request
 from pathlib import Path
 from typing import Iterable
@@ -691,7 +693,20 @@ def build_video(scene_images: list[Image.Image], output_mp4: Path, fps: int, aud
                 pass
 
 
-def make_gif(mp4_path: Path, output_gif: Path, fps: int = 10, max_width: int = 720) -> None:
+def make_gif(mp4_path: Path, output_gif: Path, fps: int = 12, max_width: int = 960) -> None:
+    # 1. En yüksek kalite: FFmpeg iki aşamalı (palettegen + paletteuse) render
+    # Bu yöntem yazı kenarlarındaki titreşimi, bulanıklığı ve greni (dithering) tamamen yok eder.
+    if shutil.which("ffmpeg"):
+        cmd = [
+            "ffmpeg", "-y", "-i", str(mp4_path),
+            "-vf", f"fps={fps},scale={max_width}:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:reserve_transparent=0:stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3",
+            str(output_gif)
+        ]
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if res.returncode == 0 and output_gif.exists():
+            return
+
+    # 2. Yedek: Pillow tabanlı render (FFmpeg bulunamazsa)
     try:
         from moviepy import VideoFileClip
     except ImportError:
